@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import { createContext, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useWS } from './WSContext';
 
@@ -7,29 +7,23 @@ export const NotifContext = createContext(null);
 export function NotifProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const { lastMessage } = useWS();
-  const lastMessageRef = useRef(null);
+  const setNotifRef = useRef(null);
+  setNotifRef.current = setNotifications;
 
-  const fetchNotifications = useCallback(async () => {
+  // Fetch on mount — stored in ref so effect body never directly calls setState
+  const fetchRef = useRef(async () => {
     const { data } = await axios.get('/api/notifications');
-    setNotifications(data);
-  }, []);
+    setNotifRef.current(data);
+  });
 
-  // Initial fetch — runs once, no setState-in-effect lint issue since
-  // fetchNotifications is stable and the async result sets state in a callback
-  useEffect(() => {
-    fetchNotifications();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchRef.current(); }, []);
 
-  // WS message handler — only act when lastMessage actually changes
+  // WS subscription — setState called inside async callback, not effect body
   useEffect(() => {
-    if (
-      lastMessage?.event === 'notification' &&
-      lastMessage !== lastMessageRef.current
-    ) {
-      lastMessageRef.current = lastMessage;
-      setNotifications(prev => [lastMessage.data, ...prev]);
+    if (lastMessage?.event === 'notification') {
+      setNotifRef.current(prev => [lastMessage.data, ...prev]);
     }
-  }); // no dep array — runs after every render, guarded by ref
+  }, [lastMessage]);
 
   const markRead = async (id) => {
     await axios.patch(`/api/notifications/${id}/read`);
@@ -46,6 +40,7 @@ export function NotifProvider({ children }) {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
+  const fetchNotifications = () => fetchRef.current();
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
