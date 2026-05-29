@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "build": "npm install",
     "test": "jest --testEnvironment=node --forceExit"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "jest": {
     "testEnvironment": "node"
