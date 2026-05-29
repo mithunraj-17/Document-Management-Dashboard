@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { WSProvider } from './context/WSContext';
-import { NotifProvider } from './context/NotifContext';
+import { NotifProvider } from './context/notifContext';
 import Header from './components/Header';
 import UploadPage from './pages/UploadPage';
 import DocumentsPage from './pages/DocumentsPage';
