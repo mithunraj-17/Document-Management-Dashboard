@@ -1,5 +1,5 @@
 import { Bell, CheckCheck, Trash2 } from 'lucide-react';
-import { useNotif } from '../context/NotifContext';
+import { useNotif } from '../context/useNotif';
 
 const TYPE_STYLES = {
   success: { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },

@@ -1,25 +1,35 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useWS } from './WSContext';
 
-const NotifContext = createContext(null);
+export const NotifContext = createContext(null);
 
 export function NotifProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const { lastMessage } = useWS();
+  const lastMessageRef = useRef(null);
 
   const fetchNotifications = useCallback(async () => {
     const { data } = await axios.get('/api/notifications');
     setNotifications(data);
   }, []);
 
-  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
-
+  // Initial fetch — runs once, no setState-in-effect lint issue since
+  // fetchNotifications is stable and the async result sets state in a callback
   useEffect(() => {
-    if (lastMessage?.event === 'notification') {
+    fetchNotifications();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // WS message handler — only act when lastMessage actually changes
+  useEffect(() => {
+    if (
+      lastMessage?.event === 'notification' &&
+      lastMessage !== lastMessageRef.current
+    ) {
+      lastMessageRef.current = lastMessage;
       setNotifications(prev => [lastMessage.data, ...prev]);
     }
-  }, [lastMessage]);
+  }); // no dep array — runs after every render, guarded by ref
 
   const markRead = async (id) => {
     await axios.patch(`/api/notifications/${id}/read`);
@@ -44,5 +54,3 @@ export function NotifProvider({ children }) {
     </NotifContext.Provider>
   );
 }
-
-export const useNotif = () => useContext(NotifContext);

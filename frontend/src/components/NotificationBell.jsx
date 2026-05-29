@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bell, CheckCheck, Trash2, X } from 'lucide-react';
-import { useNotif } from '../context/NotifContext';
+import { useNotif } from '../context/useNotif';
 
 const TYPE_STYLES = {
   success: 'bg-green-100 text-green-700',
