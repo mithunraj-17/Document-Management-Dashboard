@@ -1,27 +1,21 @@
-import { createContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useWS } from './WSContext';
-
-export const NotifContext = createContext(null);
+import { NotifContext } from './notifContext';
 
 export function NotifProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const { lastMessage } = useWS();
-  const setNotifRef = useRef(null);
-  setNotifRef.current = setNotifications;
+  const lastHandledRef = useRef(null);
 
-  // Fetch on mount — stored in ref so effect body never directly calls setState
-  const fetchRef = useRef(async () => {
-    const { data } = await axios.get('/api/notifications');
-    setNotifRef.current(data);
-  });
-
-  useEffect(() => { fetchRef.current(); }, []);
-
-  // WS subscription — setState called inside async callback, not effect body
   useEffect(() => {
-    if (lastMessage?.event === 'notification') {
-      setNotifRef.current(prev => [lastMessage.data, ...prev]);
+    axios.get('/api/notifications').then(({ data }) => setNotifications(data));
+  }, []);
+
+  useEffect(() => {
+    if (lastMessage?.event === 'notification' && lastMessage !== lastHandledRef.current) {
+      lastHandledRef.current = lastMessage;
+      setNotifications(prev => [lastMessage.data, ...prev]);
     }
   }, [lastMessage]);
 
@@ -40,7 +34,9 @@ export function NotifProvider({ children }) {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const fetchNotifications = () => fetchRef.current();
+  const fetchNotifications = () =>
+    axios.get('/api/notifications').then(({ data }) => setNotifications(data));
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
